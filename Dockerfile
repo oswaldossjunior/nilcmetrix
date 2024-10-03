@@ -1,29 +1,37 @@
-# cohmetrix
+# Usar a imagem base ubuntu:focal
 FROM ubuntu:focal
 
+# Definir o fuso horário
 ENV TZ=America/Sao_Paulo
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-RUN apt update 
-RUN apt install -y python3 python3-pip python3-numpy 
-RUN apt install -y default-jre
-#RUN apt install -y python3 python3-pip locales libpq-dev libxml2-dev libxslt1-dev python3-dev python3-lxml
-#RUN apt-get install -y python3-numpy python3-scipy python3-matplotlib ipython ipython-notebook python3-pandas python3-sympy python3-nose
-#RUN apt-get install -y python3-sklearn default-jre
 
-RUN pip3 install --upgrade pip
-RUN pip3 install --upgrade setuptools 
+# Atualizar o repositório
+RUN apt-get update
 
-WORKDIR /opt/text_metrics
+# Instalar pacotes necessários
+RUN apt-get install -y python3
+RUN apt-get install -y python3-pip
+RUN apt-get install -y python3-numpy
+RUN apt-get install -y default-jre
 
-COPY . .
-
-#RUN cd tools/nlpnet-py3 && python3 setup.py install  && cd ..
+# Instalar psycopg2 via pip
 RUN pip3 install psycopg2-binary
 
-RUN pip3 install --no-cache-dir -r requirements.txt
-
+# Instalar NLTK e baixar todos os corpora
+RUN pip3 install nltk
 RUN python3 -m nltk.downloader all
 
-RUN cd tools/idd3 && python3 setup.py install
+# Limpar o cache do apt para reduzir o tamanho da imagem
+RUN apt-get clean
 
+# Definir o diretório de trabalho
 WORKDIR /opt/text_metrics
+
+# Copiar o conteúdo do projeto para o diretório correto
+COPY . /opt/text_metrics/
+
+# Expor a porta (caso seja necessário para a aplicação)
+EXPOSE 8080
+
+# Comando de inicialização da aplicação
+ENTRYPOINT ["bash", "run_minimal.sh"]

@@ -6,4 +6,4 @@ COPY . .
 
 EXPOSE 8080
 
-ENTRYPOINT /opt/text_metrics/nilcmetrix
+ENTRYPOINT ["bash", "run_minimal.sh"]

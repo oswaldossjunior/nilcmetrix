@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: pgs_cohmetrix
+    environment:
+      POSTGRES_USER: cohmetrix
+      POSTGRES_PASSWORD: cohmetrix
+      POSTGRES_DB: cohmetrix
+    volumes:
+      - ./tools/postgres:/shared
+      - ./cohmetrix_pt_br:/docker-entrypoint-initdb.d/cohmetrix_pt_br
+    ports:
+      - "5432:5432"
+    command: >
+      bash -c "
+      until psql -U cohmetrix -d cohmetrix -c 'SELECT 1'; do
+        echo 'Waiting for PostgreSQL to be ready...';
+        sleep 1;
+      done;
+      pg_restore -U cohmetrix -d cohmetrix /docker-entrypoint-initdb.d/cohmetrix_pt_br;
+      "
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.nilcmetrix
+    depends_on:
+      - postgres
+    volumes:
+      - .:/opt/text_metrics
+    ports:
+      - "8080:8080"
+    command: ["bash", "run_minimal.sh"]
