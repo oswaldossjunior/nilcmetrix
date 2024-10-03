@@ -1,43 +1,33 @@
-version: '3.8'
-
+version: '3'
 services:
   postgres:
-    image: postgres:13
+    build: .
     container_name: pgs_cohmetrix
     environment:
       POSTGRES_USER: cohmetrix
       POSTGRES_PASSWORD: cohmetrix
       POSTGRES_DB: cohmetrix
     volumes:
-      - ./tools/postgres:/docker-entrypoint-initdb.d
-      - ./custom_pg_hba.conf:/etc/postgresql/postgresql.conf.d/pg_hba.conf
+      - ./tools/postgres:/shared
+      - ./initdb:/docker-entrypoint-initdb.d  # Mapeia o script de restauração
     ports:
       - "5432:5432"
-    command: >
-      bash -c "
-      pg_dropcluster 13 main --stop || true;
-      pg_createcluster 13 main --start;
-      until psql -U cohmetrix -d cohmetrix -c 'SELECT 1'; do
-        echo 'Waiting for PostgreSQL to be ready...';
-        sleep 1;
-      done;
-      pg_restore -U cohmetrix -d cohmetrix /docker-entrypoint-initdb.d/cohmetrix_pt_br;
-      "
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "cohmetrix"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    networks:
+      - pgnetwork
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - .:/opt/text_metrics
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "8080:8080"
-    command: ["bash", "run_minimal.sh"]
+      - "8080:80"
+    depends_on:
+      - postgres
+    networks:
+      - pgnetwork
+
+networks:
+  pgnetwork:
+    driver: bridge
