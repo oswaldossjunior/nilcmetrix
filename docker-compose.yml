@@ -9,25 +9,33 @@ services:
       POSTGRES_PASSWORD: cohmetrix
       POSTGRES_DB: cohmetrix
     volumes:
-      - ./tools/postgres:/shared
-      - ./cohmetrix_pt_br:/docker-entrypoint-initdb.d/cohmetrix_pt_br
+      - ./tools/postgres:/docker-entrypoint-initdb.d
+      - ./custom_pg_hba.conf:/etc/postgresql/postgresql.conf.d/pg_hba.conf
     ports:
       - "5432:5432"
     command: >
       bash -c "
+      pg_dropcluster 13 main --stop || true;
+      pg_createcluster 13 main --start;
       until psql -U cohmetrix -d cohmetrix -c 'SELECT 1'; do
         echo 'Waiting for PostgreSQL to be ready...';
         sleep 1;
       done;
       pg_restore -U cohmetrix -d cohmetrix /docker-entrypoint-initdb.d/cohmetrix_pt_br;
       "
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "cohmetrix"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
     build:
       context: .
-      dockerfile: Dockerfile.nilcmetrix
+      dockerfile: Dockerfile
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - .:/opt/text_metrics
     ports:

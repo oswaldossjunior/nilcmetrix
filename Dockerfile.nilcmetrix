@@ -1,9 +1,0 @@
-FROM cohmetrix:focal
-
-WORKDIR /opt/text_metrics
-
-COPY . .
-
-EXPOSE 8080
-
-ENTRYPOINT ["bash", "run_minimal.sh"]
