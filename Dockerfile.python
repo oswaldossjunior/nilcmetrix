@@ -1,0 +1,43 @@
+# Usa a imagem base Ubuntu
+FROM ubuntu:focal
+
+# Define o fuso horário
+ENV TZ=America/Sao_Paulo
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Instala dependências essenciais
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    wget \
+    unzip \
+    python3-dev \
+    libpq-dev
+
+# Atualiza o pip
+RUN pip3 install --upgrade pip
+
+# Instala 'numpy' primeiro para evitar problemas com 'nlpnet'
+RUN pip3 install --no-cache-dir numpy
+
+# Copia o arquivo de dependências
+COPY ./text_metrics/requirements.txt /app/requirements.txt
+
+# Instala as dependências do Python
+RUN pip3 install --no-cache-dir -r /app/requirements.txt
+
+# Baixa os recursos do NLTK
+RUN python3 -m nltk.downloader punkt punkt_tab
+
+# Copia o código da aplicação
+COPY ./text_metrics /app/text_metrics
+WORKDIR /app
+
+# Define o caminho da pasta 'text_metrics' para o Python
+ENV PYTHONPATH=/app/text_metrics
+
+# Expor a porta 8080 para a API
+EXPOSE 8080
+
+# Comando padrão para rodar a aplicação
+CMD ["bash", "./run-nilcmetrix-min.sh"]

@@ -1,15 +1,17 @@
 version: '3'
 services:
   postgres:
-    build: .
+    build:
+      context: .  # Constrói a imagem do PostgreSQL a partir da raiz
+      dockerfile: Dockerfile.postgres  # Especifica o Dockerfile correto para o PostgreSQL
     container_name: pgs_cohmetrix
     environment:
       POSTGRES_USER: cohmetrix
       POSTGRES_PASSWORD: cohmetrix
       POSTGRES_DB: cohmetrix
     volumes:
-      - ./tools/postgres:/shared
-      - ./initdb:/docker-entrypoint-initdb.d  # Mapeia o script de restauração
+      - ./tools/postgres:/shared  # Volume com o backup do banco
+      - ./initdb:/docker-entrypoint-initdb.d  # Scripts de inicialização
     ports:
       - "5432:5432"
     networks:
@@ -29,7 +31,9 @@ services:
       - pgnetwork
 
   app:
-    build: ./app  # Caminho para o Dockerfile da aplicação Python
+    build:
+      context: .  # Caminho para o diretório raiz onde o Dockerfile da aplicação está
+      dockerfile: Dockerfile.python  # Nome do Dockerfile específico da aplicação
     container_name: python_app
     depends_on:
       - postgres
@@ -37,9 +41,9 @@ services:
       POSTGRES_USER: cohmetrix
       POSTGRES_PASSWORD: cohmetrix
       POSTGRES_DB: cohmetrix
-      POSTGRES_HOST: postgres
+      POSTGRES_HOST: postgres  # Aponta para o serviço 'postgres' no network
     volumes:
-      - ./nilcmetrix:/opt/text_metrics  # Mapeia a pasta text_metrics no container
+      - ./text_metrics:/opt/text_metrics  # Mapeia a pasta text_metrics
     networks:
       - pgnetwork
 
